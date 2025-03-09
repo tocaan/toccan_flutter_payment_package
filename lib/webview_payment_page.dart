@@ -5,8 +5,15 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 class WebViewPaymentPage extends StatefulWidget {
   final String url;
+  final VoidCallback? onSuccess;
+  final VoidCallback? onFailure;
 
-  const WebViewPaymentPage({super.key, required this.url});
+  const WebViewPaymentPage({
+    super.key,
+    required this.url,
+    this.onSuccess,
+    this.onFailure,
+  });
 
   @override
   _WebViewPaymentPageState createState() => _WebViewPaymentPageState();
@@ -33,11 +40,20 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
                 Map<String, dynamic>? json = jsonDecode(html);
                 if (json != null && json.containsKey("success")) {
                   if (mounted) {
-                    Navigator.of(context).pop(json);
+                    if (widget.onSuccess != null) {
+                      widget.onSuccess!.call();
+                    } else {
+                      Navigator.of(context).pop();
+                    }
                   }
                 }
               } catch (e) {
                 debugPrint("Error parsing JSON: $e");
+                if (widget.onFailure != null) {
+                  widget.onFailure!.call();
+                } else {
+                  debugPrint("Error: $e");
+                }
               }
             }
           },
