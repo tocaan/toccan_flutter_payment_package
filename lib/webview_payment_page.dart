@@ -37,23 +37,36 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
 
             if (html.isNotEmpty) {
               try {
-                Map<String, dynamic>? json = jsonDecode(html);
-                if (json != null && json.containsKey("success")) {
-                  if (mounted) {
-                    if (widget.onSuccess != null) {
-                      widget.onSuccess!.call();
-                    } else {
-                      Navigator.of(context).pop();
+                var decoded = jsonDecode(html);
+
+                // Sometimes html has outer quotes -> decoded becomes String not Map
+                if (decoded is String) {
+                  decoded =
+                      jsonDecode(decoded); // Decode again if it's still String
+                }
+
+                if (decoded is Map<String, dynamic>) {
+                  String key = decoded['key'] ?? '';
+
+                  debugPrint('Extracted key: $key');
+
+                  if (key == 'fail') {
+                    debugPrint('Payment failed, please try again.');
+                  } else if (key == 'success') {
+                    if (mounted) {
+                      if (widget.onSuccess != null) {
+                        widget.onSuccess!.call();
+                      } else {
+                        Navigator.of(context).pop();
+                      }
                     }
+                    debugPrint('Payment successful!');
                   }
+                } else {
+                  debugPrint('Decoded result is not a Map');
                 }
               } catch (e) {
-                debugPrint("Error parsing JSON: $e");
-                if (widget.onFailure != null) {
-                  widget.onFailure!.call();
-                } else {
-                  debugPrint("Error: $e");
-                }
+                debugPrint('Error decoding html: $e');
               }
             }
           },
