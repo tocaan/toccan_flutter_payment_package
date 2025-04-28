@@ -31,26 +31,43 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (String url) async {
-            String html = await _controller.runJavaScriptReturningResult(
-                "document.documentElement.innerText") as String;
-            debugPrint("Finished URL: $url \nHTML: $html");
+            try {
+              String html = await _controller
+                  .runJavaScriptReturningResult(
+                  "document.documentElement.innerText") as String;
 
-            if (html.isNotEmpty) {
-              try {
-                if (mounted) {
+              // Clean up extra quotes if needed
+              html = html.trim();
+              if (html.startsWith('"') && html.endsWith('"')) {
+                html = html.substring(1, html.length - 1);
+                html = html.replaceAll(r'\"', '"'); // fix escaped quotes
+              }
+
+              debugPrint("Finished URL: $url \nHTML Content: $html");
+
+              if (html.isNotEmpty) {
+                final jsonData = jsonDecode(html);
+
+                if (jsonData['key'] == 'success') {
                   if (widget.onSuccess != null) {
                     widget.onSuccess!.call();
                   } else {
                     Navigator.of(context).pop();
                   }
+                } else if (jsonData['key'] == 'fail') {
+                  if (widget.onFailure != null) {
+                    widget.onFailure!.call();
+                  } else {
+                    Navigator.of(context).pop();
+                  }
                 }
-              } catch (e) {
-                debugPrint("Error parsing JSON: $e");
-                if (widget.onFailure != null) {
-                  widget.onFailure!.call();
-                } else {
-                  debugPrint("Error: $e");
-                }
+              }
+            } catch (e) {
+              debugPrint("Error parsing or processing HTML: $e");
+              if (widget.onFailure != null) {
+                widget.onFailure!.call();
+              } else {
+                Navigator.of(context).pop();
               }
             }
           },
