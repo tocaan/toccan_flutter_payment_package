@@ -26,8 +26,7 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
   void initState() {
     super.initState();
 
-    // Confirm updated code is running
-    debugPrint('✅ WebViewPaymentPage initialized - v1.0.1');
+    debugPrint('✅ WebViewPaymentPage initialized - v1.0.2');
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -37,11 +36,10 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
             debugPrint('✅ Page Finished loading: $url');
 
             try {
-              String html = await _controller
-                  .runJavaScriptReturningResult(
-                  "document.documentElement.innerText") as String;
+              String html = await _controller.runJavaScriptReturningResult(
+                  "document.documentElement.innerText"
+              ) as String;
 
-              // Clean and fix HTML string
               html = html.trim();
               if (html.startsWith('"') && html.endsWith('"')) {
                 html = html.substring(1, html.length - 1);
@@ -50,23 +48,46 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
 
               debugPrint("✅ HTML Content: $html");
 
-              if (html.isNotEmpty) {
-                final dynamic firstDecoded = jsonDecode(html);
+              if (html.isEmpty) {
+                debugPrint("⚠️ HTML is empty. Waiting for next navigation...");
+                return;
+              }
 
-                if (firstDecoded is String) {
-                  final Map<String, dynamic> jsonData = jsonDecode(firstDecoded);
-                  _handlePaymentResult(jsonData);
-                } else if (firstDecoded is Map<String, dynamic>) {
-                  _handlePaymentResult(firstDecoded);
-                } else {
-                  debugPrint("⚠️ Unexpected JSON structure.");
-                  _handleFailure();
-                }
+              final dynamic firstDecoded = jsonDecode(html);
+
+              if (firstDecoded is String) {
+                final Map<String, dynamic> jsonData = jsonDecode(firstDecoded);
+                _handlePaymentResult(jsonData);
+              } else if (firstDecoded is Map<String, dynamic>) {
+                _handlePaymentResult(firstDecoded);
+              } else {
+                debugPrint("⚠️ Unexpected JSON structure.");
+                _handleFailure();
               }
             } catch (e) {
               debugPrint("❌ Error parsing or processing HTML: $e");
               _handleFailure();
             }
+          },
+
+          onNavigationRequest: (NavigationRequest request) {
+            debugPrint('🔵 Navigating to: ${request.url}');
+
+            if (request.url.contains('payment-success')) {
+              debugPrint('✅ Payment success detected by URL.');
+              widget.onSuccess?.call();
+              Navigator.of(context).pop();
+              return NavigationDecision.prevent;
+            } else if (request.url.contains('payment-fail') ||
+                request.url.contains('payment-failed') ||
+                request.url.contains('fail')) {
+              debugPrint('❌ Payment failure detected by URL.');
+              widget.onFailure?.call();
+              Navigator.of(context).pop();
+              return NavigationDecision.prevent;
+            }
+
+            return NavigationDecision.navigate;
           },
         ),
       )
@@ -79,9 +100,12 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
 
     if (key == 'success') {
       widget.onSuccess?.call();
+      Navigator.of(context).pop();
     } else if (key == 'fail') {
       widget.onFailure?.call();
+      Navigator.of(context).pop();
     } else {
+      debugPrint('⚠️ Unknown key: $key');
       _handleFailure();
     }
   }
