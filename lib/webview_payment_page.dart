@@ -37,14 +37,11 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
 
             if (html.isNotEmpty) {
               try {
-                Map<String, dynamic>? json = jsonDecode(html);
-                if (json != null && json.containsKey("success")) {
-                  if (mounted) {
-                    if (widget.onSuccess != null) {
-                      widget.onSuccess!.call();
-                    } else {
-                      Navigator.of(context).pop();
-                    }
+                if (mounted) {
+                  if (widget.onSuccess != null) {
+                    widget.onSuccess!.call();
+                  } else {
+                    Navigator.of(context).pop();
                   }
                 }
               } catch (e) {
