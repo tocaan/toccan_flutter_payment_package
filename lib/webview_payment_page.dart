@@ -52,6 +52,13 @@ class _WebViewPaymentPageState extends State<WebViewPaymentPage> {
 
                   if (key == 'fail') {
                     debugPrint('Payment failed, please try again.');
+                    if (mounted) {
+                      if (widget.onFailure != null) {
+                        widget.onFailure!.call();
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    }
                   } else if (key == 'success') {
                     if (mounted) {
                       if (widget.onSuccess != null) {
