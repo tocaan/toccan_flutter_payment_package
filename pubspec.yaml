@@ -15,7 +15,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  webview_flutter: ^4.10.0
+  webview_flutter:
 
 
 # For information on the generic Dart part of this file, see the
